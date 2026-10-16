@@ -2,18 +2,27 @@ import Foundation
 import Network
 import Security
 
-/// 内嵌 HTTPS 服务器。M1 阶段：监听一个端口，对任意 HTTP 请求返回一个简单 HTML 页面，
-/// 用于验证"电脑浏览器能打开 App 提供的 HTTPS 地址"这条地基。
+/// 内嵌 HTTPS 服务器。
+/// - M1：验证电脑浏览器能打开 App 提供的 HTTPS 地址。
+/// - M3：在 HTTPS 之上提供相册浏览接口 —— 页面、相册列表、资产分页、缩略图。
 ///
-/// 后续里程碑会扩展为完整的相册浏览 / 选择 / 下载接口。
+/// 后续里程碑会在此扩展选择与下载接口（M4/M5/M6）。
 final class HTTPServer {
     private var listener: NWListener?
-    /// 服务器专用后台队列（不能在主线程跑，否则 start() 的信号量会与
-    /// listener 的状态回调互相阻塞造成死锁）。
-    private let queue = DispatchQueue(label: "com.photobridge.server")
+
+    /// listener 专用串行队列。start() 里用信号量同步等待绑定结果，
+    /// 若与状态回调同在主线程会互相阻塞造成死锁，故放到独立后台队列。
+    private let listenerQueue = DispatchQueue(label: "com.photobridge.listener")
+
+    /// 连接处理专用并发队列。缩略图生成会阻塞等待 PhotoKit，
+    /// 用并发队列才能同时服务浏览器并行发起的多个缩略图请求。
+    private let connectionQueue = DispatchQueue(label: "com.photobridge.connection",
+                                                attributes: .concurrent)
 
     /// 实际监听的端口（启动后确定，若默认端口被占用则顺延）。
     private(set) var port: UInt16 = 0
+
+    // MARK: - 生命周期
 
     /// 启动服务器。返回成功绑定的端口。
     func start() throws -> UInt16 {
@@ -30,9 +39,8 @@ final class HTTPServer {
 
         // 从 8443 开始尝试，被占用则顺延
         for candidate in stride(from: UInt16(8443), through: 8463, by: 1) {
-            let port = NWEndpoint.Port(rawValue: candidate)!
+            guard let port = NWEndpoint.Port(rawValue: candidate) else { continue }
             let listener = try NWListener(using: params, on: port)
-            // 同步等待绑定结果（后台队列回调信号量，不阻塞主线程）
             let semaphore = DispatchSemaphore(value: 0)
             var setupError: NWError?
             listener.stateUpdateHandler = { state in
@@ -49,8 +57,8 @@ final class HTTPServer {
             listener.newConnectionHandler = { [weak self] connection in
                 self?.handle(connection: connection)
             }
-            listener.start(queue: queue)
-            // 最多等 5 秒，避免个别情况下既不 ready 也不 failed 导致卡死
+            listener.start(queue: listenerQueue)
+            // 最多等 5 秒，避免既不 ready 也不 failed 时卡死
             if semaphore.wait(timeout: .now() + 5) == .timedOut {
                 listener.cancel()
                 continue
@@ -73,16 +81,16 @@ final class HTTPServer {
         port = 0
     }
 
-    // MARK: - 连接处理
+    // MARK: - 连接与请求解析
 
     private func handle(connection: NWConnection) {
-        connection.start(queue: .main)
+        connection.start(queue: connectionQueue)
         // 循环读取，直到拿到请求头结束符 \r\n\r\n。
         // 用局部可变 buffer 被嵌套闭包捕获（不能用 inout，因为 receive 的闭包是 @escaping）。
         var buffer = Data()
 
         func readNext() {
-            connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { data, _, isComplete, error in
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 16384) { data, _, isComplete, error in
                 if error != nil {
                     connection.cancel()
                     return
@@ -90,16 +98,16 @@ final class HTTPServer {
                 if let data = data, !data.isEmpty {
                     buffer.append(data)
                 }
-                if buffer.range(of: Data("\r\n\r\n".utf8)) != nil {
-                    // 请求头已收齐，丢弃 body，直接返回固定页面
-                    self.respondOK(connection: connection)
+                let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8))
+                if headerEnd != nil {
+                    self.route(buffer: buffer, connection: connection)
                     return
                 }
                 if isComplete {
-                    self.respondOK(connection: connection)
+                    connection.cancel()
                     return
                 }
-                if buffer.count < 1024 * 1024 {
+                if buffer.count < 256 * 1024 {
                     readNext()
                 } else {
                     connection.cancel()
@@ -109,19 +117,106 @@ final class HTTPServer {
         readNext()
     }
 
-    private func respondOK(connection: NWConnection) {
-        let html = Self.welcomeHTML
-        let body = html.data(using: .utf8) ?? Data()
-        var response = "HTTP/1.1 200 OK\r\n"
-        response += "Content-Type: text/html; charset=utf-8\r\n"
-        response += "Content-Length: \(body.count)\r\n"
-        response += "Connection: close\r\n"
-        response += "\r\n"
-        var out = response.data(using: .utf8) ?? Data()
+    private struct HTTPRequest {
+        let method: String
+        let path: String
+        let query: [String: String]
+    }
+
+    private static func parse(_ data: Data) -> HTTPRequest? {
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        guard let requestLine = text.components(separatedBy: "\r\n").first else { return nil }
+        let parts = requestLine.split(separator: " ")
+        guard parts.count >= 2 else { return nil }
+        let method = String(parts[0]).uppercased()
+        let target = String(parts[1])
+        let split = target.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+        let path = String(split[0])
+        var query: [String: String] = [:]
+        if split.count > 1 {
+            query = parseQuery(String(split[1]))
+        }
+        return HTTPRequest(method: method, path: path, query: query)
+    }
+
+    private static func parseQuery(_ string: String) -> [String: String] {
+        var result: [String: String] = [:]
+        for pair in string.split(separator: "&") {
+            let kv = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            guard let key = kv.first.map(String.init) else { continue }
+            let rawValue = kv.count > 1 ? String(kv[1]) : ""
+            let decodedKey = key.removingPercentEncoding ?? key
+            let decodedValue = rawValue.replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? rawValue
+            result[decodedKey] = decodedValue
+        }
+        return result
+    }
+
+    // MARK: - 路由
+
+    private func route(buffer: Data, connection: NWConnection) {
+        guard let request = Self.parse(buffer) else {
+            send(connection, status: "400 Bad Request",
+                 contentType: "text/plain; charset=utf-8", body: Data("Bad Request".utf8))
+            return
+        }
+
+        switch (request.method, request.path) {
+        case ("GET", "/"), ("GET", "/index.html"):
+            send(connection, contentType: "text/html; charset=utf-8", body: Data(WebApp.html.utf8))
+
+        case ("GET", "/api/albums"):
+            sendJSON(connection, PhotoLibrary.shared.albumsJSON())
+
+        case ("GET", "/api/assets"):
+            let album = request.query["album"] ?? "ALL"
+            let offset = max(Int(request.query["offset"] ?? "") ?? 0, 0)
+            let limit = min(max(Int(request.query["limit"] ?? "") ?? 80, 1), 300)
+            sendJSON(connection, PhotoLibrary.shared.assetsJSON(album: album, offset: offset, limit: limit))
+
+        case ("GET", "/api/thumb"):
+            let id = request.query["id"] ?? ""
+            let width = min(max(Int(request.query["w"] ?? "") ?? 320, 64), 2048)
+            if let jpeg = PhotoLibrary.shared.thumbnailJPEG(id: id, width: width) {
+                send(connection, contentType: "image/jpeg", body: jpeg, cacheSeconds: 3600)
+            } else {
+                send(connection, status: "404 Not Found",
+                     contentType: "text/plain; charset=utf-8", body: Data("thumbnail unavailable".utf8))
+            }
+
+        case ("GET", "/favicon.ico"):
+            send(connection, status: "204 No Content", contentType: "image/x-icon", body: Data())
+
+        default:
+            send(connection, status: "404 Not Found",
+                 contentType: "text/plain; charset=utf-8", body: Data("Not Found".utf8))
+        }
+    }
+
+    // MARK: - 响应
+
+    private func send(_ connection: NWConnection,
+                      status: String = "200 OK",
+                      contentType: String,
+                      body: Data,
+                      cacheSeconds: Int = 0) {
+        var header = "HTTP/1.1 \(status)\r\n"
+        header += "Content-Type: \(contentType)\r\n"
+        header += "Content-Length: \(body.count)\r\n"
+        header += cacheSeconds > 0
+            ? "Cache-Control: private, max-age=\(cacheSeconds)\r\n"
+            : "Cache-Control: no-store\r\n"
+        header += "Connection: close\r\n\r\n"
+        var out = Data(header.utf8)
         out.append(body)
         connection.send(content: out, completion: .contentProcessed { _ in
             connection.cancel()
         })
+    }
+
+    private func sendJSON(_ connection: NWConnection, _ object: Any) {
+        let data = (try? JSONSerialization.data(withJSONObject: object, options: [])) ?? Data("{}".utf8)
+        send(connection, contentType: "application/json; charset=utf-8", body: data)
     }
 
     // MARK: - 工具
@@ -153,34 +248,6 @@ final class HTTPServer {
         }
         return address
     }
-
-    static let welcomeHTML = """
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>PhotoBridge · 连接成功</title>
-      <style>
-        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f7; color: #1d1d1f; }
-        .card { background: #fff; padding: 40px 48px; border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); text-align: center; max-width: 460px; }
-        .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #34c759; margin-right: 8px; }
-        h1 { font-size: 22px; margin: 0 0 12px; }
-        p { margin: 8px 0; color: #6e6e73; font-size: 15px; line-height: 1.6; }
-        code { background: #f0f0f3; padding: 2px 6px; border-radius: 5px; font-size: 13px; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h1><span class="dot"></span>PhotoBridge 已连接</h1>
-        <p>电脑浏览器已成功访问手机 App 内嵌的 HTTPS 服务。</p>
-        <p>M1 验证通过：<code>NWListener</code> + 自签证书 + 局域网 HTTPS 链路可用。</p>
-        <p>后续里程碑将在此页面上构建相册浏览、选择与下载功能。</p>
-      </div>
-    </body>
-    </html>
-    """
 
     enum HTTPServerError: Error {
         case noAvailablePort
