@@ -1,8 +1,9 @@
 import SwiftUI
 import UIKit
 import CoreImage
+import Photos
 
-/// M1 主界面：开启/停止服务，展示访问地址（IP + 端口）与二维码。
+/// 主界面：开启/停止服务，展示访问地址（IP + 端口）与二维码。
 struct ContentView: View {
     @State private var server = HTTPServer()
     @State private var isRunning = false
@@ -47,6 +48,8 @@ struct ContentView: View {
 
     private func startService() {
         errorMessage = nil
+        // 先请求相册权限，否则电脑端打开页面后无法浏览相册
+        requestPhotoAccess()
         do {
             let boundPort = try server.start()
             port = boundPort
@@ -65,6 +68,11 @@ struct ContentView: View {
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
+    /// 请求相册读取权限（首次会弹系统授权框）。回调不阻塞界面。
+    private func requestPhotoAccess() {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { _ in }
+    }
+
     // MARK: - 子视图
 
     private var statusCard: some View {
@@ -76,7 +84,7 @@ struct ContentView: View {
                 Text(isRunning ? "服务已开启" : "服务未开启")
                     .font(.headline)
             }
-            Text(isRunning ? "电脑浏览器打开下方地址即可访问" : "点击右上角「开启服务」")
+            Text(isRunning ? "电脑浏览器打开下方地址即可浏览相册" : "点击右上角「开启服务」")
                 .font(.footnote)
                 .foregroundColor(.secondary)
         }
