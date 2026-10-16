@@ -1,0 +1,10 @@
+# Xcode (由 XcodeGen 生成，不提交)
+build/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
