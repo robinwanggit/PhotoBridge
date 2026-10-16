@@ -21,7 +21,6 @@ final class HTTPServer {
         // 配置服务端 TLS 身份
         let options = params.tlsOptions
         options.setIdentity(identity)
-        params.includePeerToPeer = true
 
         // 从 8443 开始尝试，被占用则顺延
         for candidate in stride(from: UInt16(8443), through: 8463, by: 1) {
