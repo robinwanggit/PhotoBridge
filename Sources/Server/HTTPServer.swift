@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import Security
 
 /// 内嵌 HTTPS 服务器。M1 阶段：监听一个端口，对任意 HTTP 请求返回一个简单 HTML 页面，
 /// 用于验证"电脑浏览器能打开 App 提供的 HTTPS 地址"这条地基。
@@ -16,11 +17,16 @@ final class HTTPServer {
 
     /// 启动服务器。返回成功绑定的端口。
     func start() throws -> UInt16 {
-        let identity = try Certificate.loadServerIdentity()
-        let params = NWParameters.tls
-        // 配置服务端 TLS 身份
-        let options = params.tlsOptions
-        options.setIdentity(identity)
+        let secIdentity = try Certificate.loadServerIdentity()
+        // SecIdentity 需先转换为 sec_identity_t，才能交给 TLS 选项使用
+        guard let identity = sec_identity_create(secIdentity) else {
+            throw HTTPServerError.identityUnavailable
+        }
+        // NWParameters 没有 tlsOptions 属性，需要自己构建 NWProtocolTLS.Options
+        let tlsOptions = NWProtocolTLS.Options()
+        sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv12)
+        sec_protocol_options_set_local_identity(tlsOptions.securityProtocolOptions, identity)
+        let params = NWParameters(tls: tlsOptions, tcp: .init())
 
         // 从 8443 开始尝试，被占用则顺延
         for candidate in stride(from: UInt16(8443), through: 8463, by: 1) {
@@ -77,7 +83,7 @@ final class HTTPServer {
 
         func readNext() {
             connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { data, _, isComplete, error in
-                if let error = error {
+                if error != nil {
                     connection.cancel()
                     return
                 }
@@ -134,7 +140,7 @@ final class HTTPServer {
             // 只取 WiFi 接口（en0），避免返回蜂窝或虚拟网卡地址
             guard name == "en0" else { continue }
             guard let ifaAddr = interface.ifa_addr else { continue }
-            var addr = ifaAddr.pointee
+            let addr = ifaAddr.pointee
             if addr.sa_family == UInt8(AF_INET) {
                 var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
                 getnameinfo(ifaAddr,
@@ -178,5 +184,6 @@ final class HTTPServer {
 
     enum HTTPServerError: Error {
         case noAvailablePort
+        case identityUnavailable
     }
 }
