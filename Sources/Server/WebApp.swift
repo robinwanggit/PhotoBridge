@@ -46,6 +46,8 @@ body {
 .placeholder { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #b8b8bf; }
 .badge { position: absolute; z-index: 2; left: 6px; bottom: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,.55); padding: 1px 6px; border-radius: 6px; }
 .star { position: absolute; z-index: 2; right: 6px; top: 6px; font-size: 12px; color: #ffd60a; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.fmt { position: absolute; z-index: 2; right: 6px; bottom: 6px; font-size: 10px; font-weight: 600; letter-spacing: .03em; color: #fff; background: rgba(0,0,0,.55); padding: 1px 6px; border-radius: 6px; }
+.lb-info { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 13px; color: rgba(255,255,255,.9); }
 .loading { text-align: center; padding: 22px; color: #6e6e73; font-size: 13px; }
 .hint { text-align: center; padding: 28px 24px; color: #6e6e73; font-size: 14px; line-height: 1.7; }
 .empty { text-align: center; padding: 80px 24px; color: #a1a1a6; }
@@ -139,6 +141,7 @@ body.selecting .date-head .pick { display: inline; }
 <div id="lightbox" class="lightbox" hidden>
   <button class="lb-close" id="lbClose">&#10005;</button>
   <img id="lbImg" alt="">
+  <div class="lb-info" id="lbInfo"></div>
 </div>
 <script>
 (function () {
@@ -151,6 +154,7 @@ body.selecting .date-head .pick { display: inline; }
   var hintEl = document.getElementById('hint');
   var lightbox = document.getElementById('lightbox');
   var lbImg = document.getElementById('lbImg');
+  var lbInfo = document.getElementById('lbInfo');
   var selectToggle = document.getElementById('selectToggle');
   var exportBar = document.getElementById('exportBar');
   var selCountEl = document.getElementById('selCount');
@@ -367,6 +371,13 @@ body.selecting .date-head .pick { display: inline; }
       star.textContent = '★';
       cell.appendChild(star);
     }
+    var fmtTag = (it.fmt || '').toUpperCase();
+    if (fmtTag && fmtTag !== 'HEIC') {
+      var fmt = document.createElement('div');
+      fmt.className = 'fmt';
+      fmt.textContent = fmtTag;
+      cell.appendChild(fmt);
+    }
     var check = document.createElement('div');
     check.className = 'check';
     check.textContent = '✓';
@@ -382,12 +393,17 @@ body.selecting .date-head .pick { display: inline; }
 
   function openLightbox(it) {
     lbImg.src = '/api/thumb?id=' + encodeURIComponent(it.id) + '&w=1400';
+    var parts = [];
+    if (it.fmt) parts.push(it.fmt.toUpperCase());
+    if (it.w && it.h) parts.push(it.w + '×' + it.h);
+    lbInfo.textContent = parts.join('  ·  ');
     lightbox.hidden = false;
   }
 
   function closeLightbox() {
     lightbox.hidden = true;
     lbImg.src = '';
+    lbInfo.textContent = '';
   }
 
   document.getElementById('lbClose').addEventListener('click', closeLightbox);

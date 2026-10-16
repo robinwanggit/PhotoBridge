@@ -2,12 +2,13 @@ import Foundation
 import Photos
 import UIKit
 import AVFoundation
+import ImageIO
 
 /// 导出模式，对应 PRD 5.3 的两种语义。
 enum ExportMode: String {
     /// 未修改的原片：取相册中的原始资源文件（原始格式与原始文件名）。
     case original
-    /// 拷贝照片：取 iOS 处理后的成品文件。
+    /// 拷贝照片：兼容成品。HEIC/HEIF 转 JPG、视频转 H.264；已是通用格式的保持原文件。
     case copy
 }
 
@@ -196,12 +197,42 @@ enum AssetExporter {
             throw ExportError.unavailable("成品数据为空")
         }
 
-        let ext = imageExtension(forUTI: dataUTI)
+        // 「拷贝照片」按兼容成品输出：HEIC/HEIF 转 JPG；已是 JPG/PNG/GIF 等则保持原文件。
+        var outputData = data
+        var ext = imageExtension(forUTI: dataUTI)
+        if isHEIC(dataUTI) {
+            guard let jpeg = jpegData(from: data) else {
+                throw ExportError.unavailable("HEIC 转 JPG 失败")
+            }
+            outputData = jpeg
+            ext = "jpg"
+        }
         let name = baseName(of: asset) + "." + ext
-        return ExportedFile(data: data,
+        return ExportedFile(data: outputData,
                             filename: name,
                             mimeType: mimeType(forExtension: ext),
                             relativePath: relativePath(for: asset, filename: name))
+    }
+
+    /// UTI 是否为 HEIC/HEIF（需要转成 JPG 的格式）。
+    private static func isHEIC(_ uti: String?) -> Bool {
+        guard let uti = uti?.lowercased() else { return false }
+        return uti.contains("heic") || uti.contains("heif")
+    }
+
+    /// 把 HEIC/HEIF 数据重编码为 JPEG，并保留原 EXIF/GPS/方向等元数据。
+    private static func jpegData(from data: Data) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output,
+                                                                 "public.jpeg" as CFString,
+                                                                 1, nil) else { return nil }
+        var outProperties = properties
+        outProperties[kCGImageDestinationLossyCompressionQuality] = 0.95
+        CGImageDestinationAddImageFromSource(destination, source, 0, outProperties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
     }
 
     private static func exportVideoCopy(_ asset: PHAsset) throws -> ExportedFile {
@@ -215,7 +246,7 @@ enum AssetExporter {
         var failure: Error?
         PHImageManager.default().requestExportSession(forVideo: asset,
                                                       options: options,
-                                                      exportPreset: AVAssetExportPresetPassthrough) { result, info in
+                                                      exportPreset: AVAssetExportPresetHighestQuality) { result, info in
             session = result
             if let info = info, let error = info[PHImageErrorKey] as? Error {
                 failure = error
@@ -232,6 +263,7 @@ enum AssetExporter {
             throw ExportError.unavailable("无法创建视频导出会话")
         }
 
+        // 「拷贝照片」把视频转码为 H.264，Windows 自带播放器与 Chrome 可直接播放。
         let outputType: AVFileType = exportSession.supportedFileTypes.contains(.mp4) ? .mp4 : .mov
         let ext = (outputType == .mp4) ? "mp4" : "mov"
         let tempURL = FileManager.default.temporaryDirectory

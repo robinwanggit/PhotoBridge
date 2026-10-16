@@ -152,6 +152,7 @@ final class PhotoLibrary {
                 if asset.mediaType == .video {
                     item["duration"] = asset.duration
                 }
+                item["fmt"] = formatLabel(for: asset)
                 items.append(item)
             }
             hasMore = end < total
@@ -164,6 +165,18 @@ final class PhotoLibrary {
             "total": total,
             "hasMore": hasMore,
         ]
+    }
+
+    /// 资产在相册中的原始格式标签（HEIC / JPG / PNG / MOV …），供电脑端核对拿到的是哪种格式。
+    private func formatLabel(for asset: PHAsset) -> String {
+        let resources = PHAssetResource.assetResources(for: asset)
+        let wanted: PHAssetResourceType = (asset.mediaType == .video) ? .fullSizeVideo : .fullSizePhoto
+        let resource = resources.first { $0.type == wanted }
+            ?? resources.first { $0.type == .photo || $0.type == .fullSizePhoto
+                                 || $0.type == .video || $0.type == .fullSizeVideo }
+            ?? resources.first
+        guard let name = resource?.originalFilename else { return "" }
+        return (name as NSString).pathExtension.uppercased()
     }
 
     // MARK: - 资产 id 列表（整选）
