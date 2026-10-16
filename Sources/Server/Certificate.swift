@@ -11,16 +11,15 @@ enum Certificate {
         guard let p12URL = Bundle.main.url(forResource: "cert", withExtension: "p12") else {
             throw CertificateError.missingBundleFile
         }
-        let data = try Data(contentsOf: p12URL) as CFData
-        let options: [CFString: Any] = [
-            kSecImportExportPassphrase: "photobridge"
-        ]
+        let data = try Data(contentsOf: p12URL)
+        // 用 String 键 + 桥接到 CFDictionary，这是苹果官方文档的写法
+        let options = [kSecImportExportPassphrase as String: "photobridge"]
         var items: CFArray?
-        let status = SecPKCS12Import(data, options as CFDictionary, &items)
+        let status = SecPKCS12Import(data as CFData, options as CFDictionary, &items)
         guard status == errSecSuccess,
-              let array = items as? [[CFString: Any]],
+              let array = items as? [[String: Any]],
               let first = array.first,
-              let identity = first[kSecImportItemIdentity] as! SecIdentity? else {
+              let identity = first[kSecImportItemIdentity as String] as! SecIdentity? else {
             throw CertificateError.importFailed(status: status)
         }
         return identity
