@@ -166,6 +166,40 @@ final class PhotoLibrary {
         ]
     }
 
+    // MARK: - 资产 id 列表（整选）
+
+    /// 返回某相册（可限定拍摄时间区间）内全部资产的 id，供前端「整选」使用。
+    /// 返回 `{ authorized, status, ids }`。from / to 为 Unix 秒（闭区间下界、开区间上界）。
+    func assetIDsJSON(album: String, from: Double?, to: Double?) -> [String: Any] {
+        let status = authorizationStatus()
+        guard isAuthorized else {
+            return ["authorized": false, "status": statusString(status), "ids": [Any]()]
+        }
+
+        let options = PHFetchOptions()
+        var predicates: [NSPredicate] = []
+        if let from = from {
+            predicates.append(NSPredicate(format: "creationDate >= %@", Date(timeIntervalSince1970: from) as NSDate))
+        }
+        if let to = to {
+            predicates.append(NSPredicate(format: "creationDate < %@", Date(timeIntervalSince1970: to) as NSDate))
+        }
+        if !predicates.isEmpty {
+            options.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        }
+
+        guard let fetch = fetchResult(album: album, options: options) else {
+            return ["authorized": true, "status": "authorized", "ids": [String]()]
+        }
+        var ids: [String] = []
+        ids.reserveCapacity(fetch.count)
+        fetch.enumerateObjects { asset, _, _ in
+            ids.append(asset.localIdentifier)
+        }
+
+        return ["authorized": true, "status": "authorized", "ids": ids]
+    }
+
     // MARK: - 缩略图
 
     /// 生成指定资产的正方形 JPEG 缩略图。失败返回 nil。

@@ -4,6 +4,8 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+  # CI 机器上默认的 Xcode 是 15.x，无法打开 XcodeGen 默认生成的 xcode16_0 格式
+  # (objectVersion 77)。降级为 Xcode 15.0 格式，新版本 Xcode 也能正常打开。
   projectFormat: xcode15_0
 
 settings:
