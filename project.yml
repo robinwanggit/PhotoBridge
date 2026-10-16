@@ -1,0 +1,45 @@
+name: PhotoBridge
+options:
+  bundleIdPrefix: com.photobridge
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGN_IDENTITY: ""
+
+targets:
+  PhotoBridge:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+      - path: Sources/Server
+    resources:
+      - path: Sources/Resources/cert.p12
+      - path: Sources/Resources/Assets.xcassets
+    settings:
+      base:
+        INFOPLIST_FILE: Sources/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        PRODUCT_BUNDLE_IDENTIFIER: com.photobridge.PhotoBridge
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_BITCODE: "NO"
+
+schemes:
+  PhotoBridge:
+    build:
+      targets:
+        PhotoBridge: all
+    run:
+      config: Debug
+    archive:
+      config: Release
