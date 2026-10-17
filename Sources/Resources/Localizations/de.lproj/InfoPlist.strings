@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "Ermöglicht einem Computer-Browser den Zugriff auf die Fotomediathek über dasselbe WiFi-Netzwerk.";
+"NSPhotoLibraryUsageDescription" = "Wird verwendet, um die Fotomediathek zu lesen, damit ein Computer-Browser Fotos durchsuchen und herunterladen kann.";

@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "同じ WiFi ネットワーク上でコンピュータのブラウザから写真ライブラリにアクセスするために使用します。";
+"NSPhotoLibraryUsageDescription" = "コンピュータのブラウザで写真を閲覧・ダウンロードできるように、写真ライブラリを読み取るために使用します。";

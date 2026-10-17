@@ -1,0 +1,16 @@
+"start_service" = "Démarrer le service";
+"stop_service" = "Arrêter le service";
+"service_running" = "Service démarré";
+"service_stopped" = "Service arrêté";
+"running_hint" = "Ouvrez l'adresse ci-dessous dans le navigateur de votre ordinateur pour parcourir votre album";
+"stopped_hint" = "Appuyez sur « Démarrer le service » en haut à droite";
+"access_address" = "Adresse d'accès";
+"no_wifi" = "Impossible d'obtenir l'adresse WiFi. Vérifiez que votre téléphone est connecté en WiFi";
+"same_wifi" = "Assurez-vous que votre ordinateur et votre téléphone sont sur le même réseau WiFi";
+"scan_qr" = "Scannez le code QR ou saisissez l'adresse ci-dessus dans le navigateur de l'ordinateur";
+"start_failed" = "Échec du démarrage du service : %@";
+"language" = "Langue";
+"settings" = "Réglages";
+"select_language" = "Choisir la langue";
+"follow_system" = "Suivre le système";
+"done" = "Terminé";

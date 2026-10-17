@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "用于在同一 WiFi 下让电脑浏览器访问手机相册。";
+"NSPhotoLibraryUsageDescription" = "用于读取手机相册，供电脑浏览器浏览与下载照片。";

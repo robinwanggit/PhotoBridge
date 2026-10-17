@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "Permet à un navigateur d'ordinateur d'accéder à la photothèque via le même réseau WiFi.";
+"NSPhotoLibraryUsageDescription" = "Permet de lire la photothèque pour qu'un navigateur puisse parcourir et télécharger les photos.";

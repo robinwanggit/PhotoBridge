@@ -1,0 +1,16 @@
+"start_service" = "Iniciar serviço";
+"stop_service" = "Parar serviço";
+"service_running" = "Serviço em execução";
+"service_stopped" = "Serviço parado";
+"running_hint" = "Abra o endereço abaixo no navegador do computador para ver suas fotos";
+"stopped_hint" = "Toque em «Iniciar serviço» no canto superior direito";
+"access_address" = "Endereço de acesso";
+"no_wifi" = "Não foi possível obter o endereço WiFi. Verifique se o telefone está conectado ao WiFi";
+"same_wifi" = "Verifique se o computador e o telefone estão na mesma rede WiFi";
+"scan_qr" = "Escaneie o código QR ou digite o endereço acima no navegador do computador";
+"start_failed" = "Falha ao iniciar o serviço: %@";
+"language" = "Idioma";
+"settings" = "Configurações";
+"select_language" = "Selecionar idioma";
+"follow_system" = "Seguir sistema";
+"done" = "Concluído";

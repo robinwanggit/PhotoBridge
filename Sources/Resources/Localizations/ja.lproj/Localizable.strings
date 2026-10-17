@@ -1,0 +1,16 @@
+"start_service" = "サービスを開始";
+"stop_service" = "サービスを停止";
+"service_running" = "サービス実行中";
+"service_stopped" = "サービス停止中";
+"running_hint" = "パソコンのブラウザで下のアドレスを開くと写真を閲覧できます";
+"stopped_hint" = "右上の「サービスを開始」をタップ";
+"access_address" = "アクセスアドレス";
+"no_wifi" = "WiFi アドレスを取得できません。スマホが WiFi に接続されているか確認してください";
+"same_wifi" = "パソコンとスマホが同じ WiFi に接続されていることを確認してください";
+"scan_qr" = "QR コードをスキャンするか、上のアドレスをパソコンのブラウザに入力してください";
+"start_failed" = "サービスの開始に失敗しました：%@";
+"language" = "言語";
+"settings" = "設定";
+"select_language" = "言語を選択";
+"follow_system" = "システムに従う";
+"done" = "完了";

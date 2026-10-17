@@ -1,0 +1,16 @@
+"start_service" = "Mulai Layanan";
+"stop_service" = "Hentikan Layanan";
+"service_running" = "Layanan Berjalan";
+"service_stopped" = "Layanan Berhenti";
+"running_hint" = "Buka alamat di bawah ini di peramban komputer untuk melihat foto Anda";
+"stopped_hint" = "Ketuk «Mulai Layanan» di kanan atas";
+"access_address" = "Alamat Akses";
+"no_wifi" = "Tidak dapat memperoleh alamat WiFi. Pastikan ponsel terhubung ke WiFi";
+"same_wifi" = "Pastikan komputer dan ponsel berada di jaringan WiFi yang sama";
+"scan_qr" = "Pindai kode QR atau masukkan alamat di atas ke peramban komputer";
+"start_failed" = "Gagal memulai layanan: %@";
+"language" = "Bahasa";
+"settings" = "Pengaturan";
+"select_language" = "Pilih Bahasa";
+"follow_system" = "Ikuti Sistem";
+"done" = "Selesai";

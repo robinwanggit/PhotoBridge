@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "Consente a un browser del computer di accedere alla libreria fotografica sulla stessa rete WiFi.";
+"NSPhotoLibraryUsageDescription" = "Utilizzato per leggere la libreria fotografica in modo che un browser del computer possa sfogliare e scaricare le foto.";

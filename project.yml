@@ -27,6 +27,7 @@ targets:
     resources:
       - path: Sources/Resources/cert.p12
       - path: Sources/Resources/Assets.xcassets
+      - path: Sources/Resources/Localizations
     settings:
       base:
         INFOPLIST_FILE: Sources/Resources/Info.plist

@@ -1,0 +1,16 @@
+"start_service" = "Start Service";
+"stop_service" = "Stop Service";
+"service_running" = "Service Running";
+"service_stopped" = "Service Stopped";
+"running_hint" = "Open the address below in a computer browser to browse your photos";
+"stopped_hint" = "Tap Start Service in the top right";
+"access_address" = "Access Address";
+"no_wifi" = "Could not get WiFi address. Make sure your phone is connected to WiFi";
+"same_wifi" = "Make sure your computer and phone are on the same WiFi network";
+"scan_qr" = "Scan the QR code or enter the address above in a computer browser";
+"start_failed" = "Failed to start service: %@";
+"language" = "Language";
+"settings" = "Settings";
+"select_language" = "Select Language";
+"follow_system" = "Follow System";
+"done" = "Done";

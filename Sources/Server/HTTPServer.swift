@@ -199,6 +199,13 @@ final class HTTPServer {
             let limit = min(max(Int(request.query["limit"] ?? "") ?? 80, 1), 300)
             sendJSON(connection, PhotoLibrary.shared.assetsJSON(album: album, offset: offset, limit: limit))
 
+        case ("GET", "/api/lang"):
+            // 向网页端返回当前 App 语言，供其选择对应本地化文案。
+            sendJSON(connection, [
+                "lang": Localization.shared.currentLanguage,
+                "rtl": Localization.shared.isRTL
+            ])
+
         case ("GET", "/api/ids"):
             let album = request.query["album"] ?? "ALL"
             let from = Double(request.query["from"] ?? "")

@@ -1,0 +1,16 @@
+"start_service" = "서비스 시작";
+"stop_service" = "서비스 중지";
+"service_running" = "서비스 실행 중";
+"service_stopped" = "서비스 중지됨";
+"running_hint" = "컴퓨터 브라우저에서 아래 주소를 열어 사진을 확인하세요";
+"stopped_hint" = "오른쪽 상단의 '서비스 시작'을 누르세요";
+"access_address" = "접속 주소";
+"no_wifi" = "WiFi 주소를 가져올 수 없습니다. 휴대폰이 WiFi에 연결되어 있는지 확인하세요";
+"same_wifi" = "컴퓨터와 휴대폰이 같은 WiFi에 연결되어 있는지 확인하세요";
+"scan_qr" = "QR 코드를 스캔하거나 위 주소를 컴퓨터 브라우저에 입력하세요";
+"start_failed" = "서비스 시작 실패: %@";
+"language" = "언어";
+"settings" = "설정";
+"select_language" = "언어 선택";
+"follow_system" = "시스템 언어 따르기";
+"done" = "완료";

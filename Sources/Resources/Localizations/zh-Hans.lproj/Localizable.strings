@@ -1,0 +1,16 @@
+"start_service" = "开启服务";
+"stop_service" = "停止服务";
+"service_running" = "服务已开启";
+"service_stopped" = "服务未开启";
+"running_hint" = "电脑浏览器打开下方地址即可浏览相册";
+"stopped_hint" = "点击右上角「开启服务」";
+"access_address" = "访问地址";
+"no_wifi" = "未获取到 WiFi 地址，请确认手机已连接 WiFi";
+"same_wifi" = "确保电脑与手机连接同一个 WiFi";
+"scan_qr" = "扫码或在电脑浏览器中输入上方地址";
+"start_failed" = "服务启动失败：%@";
+"language" = "语言";
+"settings" = "设置";
+"select_language" = "选择语言";
+"follow_system" = "跟随系统";
+"done" = "完成";

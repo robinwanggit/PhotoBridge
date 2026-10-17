@@ -1,0 +1,16 @@
+"start_service" = "Dienst starten";
+"stop_service" = "Dienst stoppen";
+"service_running" = "Dienst läuft";
+"service_stopped" = "Dienst gestoppt";
+"running_hint" = "Öffnen Sie die unten stehende Adresse im Browser Ihres Computers, um Ihr Album zu durchsuchen";
+"stopped_hint" = "Tippen Sie oben rechts auf „Dienst starten”";
+"access_address" = "Zugriffsadresse";
+"no_wifi" = "WLAN-Adresse konnte nicht ermittelt werden. Stellen Sie sicher, dass Ihr Telefon mit WLAN verbunden ist";
+"same_wifi" = "Stellen Sie sicher, dass Computer und Telefon mit demselben WLAN verbunden sind";
+"scan_qr" = "Scannen Sie den QR-Code oder geben Sie die oben stehende Adresse im Browser des Computers ein";
+"start_failed" = "Dienst konnte nicht gestartet werden: %@";
+"language" = "Sprache";
+"settings" = "Einstellungen";
+"select_language" = "Sprache auswählen";
+"follow_system" = "System folgen";
+"done" = "Fertig";

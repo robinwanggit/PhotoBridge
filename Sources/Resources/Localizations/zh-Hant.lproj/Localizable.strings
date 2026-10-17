@@ -1,0 +1,16 @@
+"start_service" = "開啟服務";
+"stop_service" = "停止服務";
+"service_running" = "服務已開啟";
+"service_stopped" = "服務未開啟";
+"running_hint" = "電腦瀏覽器開啟下方網址即可瀏覽相簿";
+"stopped_hint" = "點擊右上角「開啟服務」";
+"access_address" = "存取網址";
+"no_wifi" = "未取得 WiFi 位址，請確認手機已連接 WiFi";
+"same_wifi" = "請確保電腦與手機連接同一個 WiFi";
+"scan_qr" = "掃碼或在電腦瀏覽器中輸入上方網址";
+"start_failed" = "服務啟動失敗：%@";
+"language" = "語言";
+"settings" = "設定";
+"select_language" = "選擇語言";
+"follow_system" = "跟隨系統";
+"done" = "完成";

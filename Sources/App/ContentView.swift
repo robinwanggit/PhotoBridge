@@ -5,10 +5,12 @@ import Photos
 
 /// 主界面：开启/停止服务，展示访问地址（IP + 端口）与二维码。
 struct ContentView: View {
+    @ObservedObject private var loc = Localization.shared
     @State private var server = HTTPServer()
     @State private var isRunning = false
     @State private var port: UInt16 = 0
     @State private var errorMessage: String?
+    @State private var showLanguagePicker = false
 
     private var ipAddress: String { HTTPServer.localIPv4Address() ?? "—" }
     private var urlString: String {
@@ -37,11 +39,25 @@ struct ContentView: View {
             .navigationTitle("PhotoBridge")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                Button(isRunning ? "停止服务" : "开启服务") {
-                    isRunning ? stopService() : startService()
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showLanguagePicker = true
+                    } label: {
+                        Image(systemName: "globe")
+                    }
+                    .accessibilityLabel(loc.tr("language"))
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(isRunning ? loc.tr("stop_service") : loc.tr("start_service")) {
+                        isRunning ? stopService() : startService()
+                    }
                 }
             }
+            .sheet(isPresented: $showLanguagePicker) {
+                LanguagePickerView()
+            }
         }
+        .environment(\.layoutDirection, loc.isRTL ? .rightToLeft : .leftToRight)
     }
 
     // MARK: - 服务控制
@@ -57,7 +73,7 @@ struct ContentView: View {
             // 传输期间保持屏幕常亮，避免自动息屏导致服务中断
             UIApplication.shared.isIdleTimerDisabled = true
         } catch {
-            errorMessage = "服务启动失败：\(error.localizedDescription)"
+            errorMessage = String(format: loc.tr("start_failed"), error.localizedDescription)
         }
     }
 
@@ -81,10 +97,10 @@ struct ContentView: View {
                 Circle()
                     .fill(isRunning ? Color.green : Color.gray)
                     .frame(width: 12, height: 12)
-                Text(isRunning ? "服务已开启" : "服务未开启")
+                Text(isRunning ? loc.tr("service_running") : loc.tr("service_stopped"))
                     .font(.headline)
             }
-            Text(isRunning ? "电脑浏览器打开下方地址即可浏览相册" : "点击右上角「开启服务」")
+            Text(isRunning ? loc.tr("running_hint") : loc.tr("stopped_hint"))
                 .font(.footnote)
                 .foregroundColor(.secondary)
         }
@@ -97,7 +113,7 @@ struct ContentView: View {
 
     private var addressCard: some View {
         VStack(spacing: 6) {
-            Text("访问地址")
+            Text(loc.tr("access_address"))
                 .font(.caption)
                 .foregroundColor(.secondary)
             Text(urlString)
@@ -105,11 +121,11 @@ struct ContentView: View {
                 .fontWeight(.semibold)
                 .textSelection(.enabled)
             if ipAddress == "—" {
-                Text("未获取到 WiFi 地址，请确认手机已连接 WiFi")
+                Text(loc.tr("no_wifi"))
                     .font(.caption)
                     .foregroundColor(.orange)
             } else {
-                Text("确保电脑与手机连接同一个 WiFi")
+                Text(loc.tr("same_wifi"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -132,7 +148,7 @@ struct ContentView: View {
                     .background(Color.white)
                     .cornerRadius(12)
             }
-            Text("扫码或在电脑浏览器中输入上方地址")
+            Text(loc.tr("scan_qr"))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -156,5 +172,62 @@ struct ContentView: View {
         let context = CIContext()
         guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return nil }
         return UIImage(cgImage: cgImage)
+    }
+}
+
+// MARK: - 语言选择弹窗
+
+/// 语言选择列表：包含「跟随系统」与全部 18 种支持语言。
+struct LanguagePickerView: View {
+    @ObservedObject private var loc = Localization.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        loc.setLanguage(nil)
+                    } label: {
+                        HStack {
+                            Text(loc.tr("follow_system"))
+                            Spacer()
+                            if UserDefaults.standard.string(forKey: "AppLanguage") == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .foregroundColor(.primary)
+                    }
+                }
+                Section {
+                    ForEach(Localization.supported, id: \.code) { lang in
+                        Button {
+                            loc.setLanguage(lang.code)
+                        } label: {
+                            HStack {
+                                Text(lang.name)
+                                Spacer()
+                                if loc.currentLanguage == lang.code {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+                            .foregroundColor(.primary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(loc.tr("select_language"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(loc.tr("done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .environment(\.layoutDirection, loc.isRTL ? .rightToLeft : .leftToRight)
     }
 }
