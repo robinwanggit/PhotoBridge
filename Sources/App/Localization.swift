@@ -95,7 +95,7 @@ final class Localization: ObservableObject {
             // 仅语言代码：zh-Hans-CN → zh-Hans / zh
             let dash = pref.split(separator: "-")
             if dash.count >= 2 {
-                let base = dash[0] + "-" + dash[1]
+                let base = String(dash[0]) + "-" + String(dash[1])
                 if supportedCodes.contains(base) { return base }
             }
             let lang = String(dash[0])
