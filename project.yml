@@ -24,10 +24,10 @@ targets:
     sources:
       - path: Sources/App
       - path: Sources/Server
-    resources:
-      - path: Sources/Resources/cert.p12
       - path: Sources/Resources/Assets.xcassets
+        buildPhase: resources
       - path: Sources/Resources/Localizations
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: Sources/Resources/Info.plist
