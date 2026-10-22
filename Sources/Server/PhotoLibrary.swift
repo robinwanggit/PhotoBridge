@@ -13,11 +13,36 @@ final class PhotoLibrary {
 
     private init() {}
 
-    /// 智能相册里不需要展示的项（最近删除 / 隐藏）。
-    /// 这些相册的 localizedTitle 由系统本地化，这里同时覆盖中英文。
-    private static let excludedTitles: Set<String> = [
-        "最近删除", "Recently Deleted", "隐藏", "Hidden",
-    ]
+    // MARK: - 本地化相册标题
+
+    /// 按 App 当前语言返回的相册名：图库 / Library / …
+    private static func localizedTitle(_ key: String) -> String {
+        let lang = Localization.shared.currentLanguage
+        let map: [String: [String: String]] = [
+            "library":  ["zh-Hans":"图库","zh-Hant":"圖庫","en":"Library","fr":"Bibliothèque","de":"Mediathek","ja":"ライブラリ","ko":"라이브러리","it":"Libreria","es":"Librería","hi":"लाइब्रेरी","ar":"المكتبة","ru":"Медиатека","bn":"লাইব্রেরি","pt":"Biblioteca","id":"Perpustakaan","th":"แกลเลอรี","mn":"Цом","bo":"པར་མཛོད་ཁང་"],
+            "untitled": ["zh-Hans":"未命名","zh-Hant":"未命名","en":"Untitled","fr":"Sans titre","de":"Unbenannt","ja":"無題","ko":"제목 없음","it":"Senza titolo","es":"Sin título","hi":"बिना शीर्षक के","ar":"بلا عنوان","ru":"Без названия","bn":"শিরোনামহীন","pt":"Sem título","id":"Tanpa judul","th":"ไม่มีชื่อ","mn":"Нэргүй","bo":"མིང་མེད་པ་"],
+        ]
+        return map[key]?[lang] ?? map[key]?["en"] ?? key
+    }
+
+    /// 当前语言下「最近删除 / 隐藏」等要排除的系统相册标题。
+    private static var excludedTitles: Set<String> {
+        // 系统相册 localizedTitle 由设备当前语言决定，与 App 语言独立
+        let device = Locale.current.languageCode
+        switch device {
+        case "zh":  return ["最近删除", "隐藏"]
+        case "ja":  return ["最近削除した項目", "非表示"]
+        case "ko":  return ["최근 삭제한 항목", "숨겨진 항목"]
+        case "fr":  return ["Supprimés récemment", "Masqués"]
+        case "de":  return ["Zuletzt gelöscht", "Ausgeblendet"]
+        case "es":  return ["Eliminados recientemente", "Ocultos"]
+        case "it":  return ["Eliminati di recente", "Nascosti"]
+        case "ru":  return ["Недавно удаленные", "Скрытые"]
+        case "pt":  return ["Apagados recentemente", "Ocultos"]
+        case "hi":  return ["हाल ही में हटाए गए", "छिपा हुआ"]
+        default:    return ["Recently Deleted", "Hidden"]
+        }
+    }
 
     // MARK: - 授权状态
 
@@ -61,7 +86,7 @@ final class PhotoLibrary {
         // 「图库」= 系统用户图库（相机胶卷），与系统相册 App 的「图库」一致
         albums.append([
             "id": "ALL",
-            "title": "图库",
+            "title": Self.localizedTitle("library"),
             "kind": "library",
             "count": libraryFetch(options: nil).count,
         ])
@@ -77,7 +102,7 @@ final class PhotoLibrary {
             guard count > 0 else { return }
             albums.append([
                 "id": collection.localIdentifier,
-                "title": title.isEmpty ? "未命名" : title,
+                "title": title.isEmpty ? Self.localizedTitle("untitled") : title,
                 "kind": "smart",
                 "count": count,
             ])
@@ -90,7 +115,7 @@ final class PhotoLibrary {
             guard count > 0 else { return }
             albums.append([
                 "id": collection.localIdentifier,
-                "title": collection.localizedTitle ?? "未命名",
+                "title": collection.localizedTitle ?? Self.localizedTitle("untitled"),
                 "kind": "user",
                 "count": count,
             ])
